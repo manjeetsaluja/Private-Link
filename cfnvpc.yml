@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+
+    This template will deply VPC with 2 subnets
+
+Parameters:
+    
+    VpcCIDR:
+        Description: Please enter the IP range (CIDR notation) for this VPC
+        Type: String
+        Default: 192.0.0.0/16
+    PrivateSubnet1CIDR:
+        Type: String
+        Default: 192.0.1.0/24
+    PrivateSubnet2CIDR:
+        Type: String
+        Default: 192.0.2.0/24
+   
+Resources:
+
+    VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: !Ref VpcCIDR
+            EnableDnsHostnames: true
+            EnableDnsSupport: !!bool 'true'
+            Tags:
+            - Key: Name
+              Value: PvtLinkVPC
+           
+    PrivateSubnet1:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId: !Ref VPC
+            AvailabilityZone: !Select [ 0, !GetAZs '' ]
+            CidrBlock: !Ref PrivateSubnet1CIDR
+            MapPublicIpOnLaunch: false
+            Tags:
+            - Key: Name
+              Value: PvtLinkSubnet1
+            
+    PrivateSubnet2:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId: !Ref VPC
+            AvailabilityZone: !Select [ 1, !GetAZs '' ]
+            CidrBlock: !Ref PrivateSubnet2CIDR
+            MapPublicIpOnLaunch: false
+            Tags:
+            - Key: Name
+              Value: PvtLinkSubnet2
+    
+    PrivateRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties: 
+            VpcId: !Ref VPC
+
+    PrivateSubnet1RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable
+            SubnetId: !Ref PrivateSubnet1
+
+    PrivateSubnet2RouteTableAssociation:
+
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable
+            SubnetId: !Ref PrivateSubnet2
+            
+    VPCSecurityGroup:    
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "VPC-Security-Group"
+            GroupDescription: "Security group for EC2"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: '80'
+                  ToPort: '80'
+                  CidrIp: '0.0.0.0/0'
+                - IpProtocol: tcp
+                  FromPort: '443'
+                  ToPort: '443'
+                  CidrIp: '0.0.0.0/0'      
